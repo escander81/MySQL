@@ -1,0 +1,49 @@
+-- 1. Установите СУБД MySQL. Создайте в домашней директории файл .my.cnf, задав в нем логин и пароль, который указывался при установке.
+
+--все установил
+/*создал файл .my.cnf
+[mysql]
+user=root
+password=указал свой пароль
+
+не работает
+расположил файл и в папке /usr/local/mysql/bin/mysql (по этому пути запускается mysql)
+после этого mysql перестал запускаться через терминал
+разместил также  в основном каталоге пользователя. по команде mysql не запускается, но если набрать длинный путь /usr/local/mysql/bin/mysql  -u root -p  
+то спрашивает пароль, но если просто нажать энтер - входит без пароля. видимо все-таки пароль подтягивает из файла. */
+
+
+-- 2. Сздайте базу данных example, разместите в ней таблицу users, состоящую из двух столбцов, числового id и строкового name.
+mysql> CREATE DATABASE example;
+Query OK, 1 row affected (0,01 sec)
+
+mysql> CREATE DATABASE sample;
+Query OK, 1 row affected (0,00 sec)
+
+mysql> USE example;
+Database changed
+mysql> CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR(255) COMMENT 'Имя пользователя');
+Query OK, 0 rows affected (0,01 sec)
+
+mysql> show tables;
++---------------------+
+| Tables_in_example |
++---------------------+
+| users               |
++---------------------+
+1 row in set (0,00 sec)
+
+mysql> exit
+Bye
+
+
+-- 3. Создайте дамп базы данных example из предыдущего задания, разверните содержимое дампа в новую базу данных sample.
+
+(base) iMac:~ Pragma$ /usr/local/mysql/bin/mysqldump -u root -p mysql > dump.sql
+Enter password: 
+(base) iMac:~ Pragma$ /usr/local/mysql/bin/mysql -u root -p sample < dump.sql
+Enter password: 
+
+/* файл Сэмпл пустой, весит 0 байт. не восстанавливается. */
+
+
