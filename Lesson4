@@ -1,1 +1,226 @@
-Lesson4
+-- lesson4
+-- скрин урока https://cloud.mail.ru/public/Dxu3/axoTwBLHA
+/*
+модифицируем базу
+*/
+
+USE vk;
+ALTER TABLE friend_requests
+ADD CONSTRAINT sender_not_reciever_check
+CHECK (from_user_id != to_user_id);
+
+SELECT * FROM friend_requests;
+
+-- regex101.com
+ALTER TABLE users 
+ADD CONSTRAINT phone_check
+CHECK (REGEXP_LIKE(phone, '^[0-9]{11}$'));
+
+-- делаем foreign key на media
+
+ALTER TABLE profiles 
+ADD CONSTRAINT fk_profiles_media
+FOREIGN KEY (photo_id) REFERENCES media (id);
+
+
+/* 
+  C - Create = INSERT
+  R - Read   = SELECT
+  U - Update = UPDATE
+  D - Delete = DELETE
+*/
+
+/*
+ * INSERT
+ * https://dev.mysql.com/doc/refman/8.0/en/insert.html
+ */
+
+-- добавляем пользователя
+
+INSERT INTO users (id, first_name, last_name, email, phone, password_hash)
+VALUES (DEFAULT, 'Alex', 'Stepanov', 'alex@mail.com', '89213546566', 'aaa');
+
+
+-- добавляем повторно того же пользователя и избегаем ошибку
+
+INSERT IGNORE INTO users (id, first_name, last_name, email, phone, password_hash)
+VALUES (DEFAULT, 'Alex', 'Stepanov', 'alex@mail.com', '89213546566', 'aaa');
+
+SELECT * FROM users;
+
+-- не указываем default значения
+INSERT users (first_name, last_name, email, phone)
+VALUES ('Lena', 'Stepanova', 'lena@mail.com', '89213546568');
+
+-- выполняем insert без указания названия колонок
+INSERT users 
+VALUES (DEFAULT, 'Chris', 'Ivanov', 'chris@mail.com', '89213546560', DEFAULT, DEFAULT);
+
+-- точно задаем id
+INSERT INTO users (id, first_name, last_name, email, phone)
+VALUES (55, 'Jane', 'Kvanov', 'jane@mail.com', '89293546560');
+
+-- добавляем id меньше текущего
+INSERT INTO users (id, first_name, last_name, email, phone) VALUES 
+(45, 'Jane', 'Night', 'jane_n@mail.com', '89293946560');
+
+-- добавляем несколько пользователей
+INSERT INTO users (first_name, last_name, email, phone)
+VALUES ('Igor', 'Petrov', 'igor@mail.com', '89213549560'), ('Oksana', 'Petrova', 'oksana@mail.com', '89213549561');
+
+-- добавляем через ключевое слово SET
+INSERT INTO users 
+SET first_name = 'Iren',
+	last_name = 'Sidorova',
+	email = 'iren@mail.com',
+	phone  = '89213541560';
+
+-- получаем код создания таблицы users
+SHOW CREATE TABLE users;
+-- код создания таблицы users
+CREATE TABLE `users` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(145) NOT NULL,
+  `last_name` varchar(145) NOT NULL,
+  `email` varchar(145) NOT NULL,
+  `phone` char(11) NOT NULL,
+  `password_hash` char(65) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `phone` (`phone`),
+  KEY `email_2` (`email`)
+);
+
+-- переключаемся к БД test и добавляем в неё таблицу users
+CREATE DATABASE test;
+
+USE test;
+
+-- Добавляем данные в test гыукы
+INSERT INTO users (first_name, last_name, email, phone)
+VALUES ('Alina', 'Kobrina', 'alina@mail.com', '89210549561');
+
+-- Переключаемся обратно к БД vk
+USE vk;
+
+-- INSERT - SELECT 
+INSERT users (first_name, last_name, email, phone)
+SELECT first_name, last_name, email, phone FROM test.users;
+
+
+/*
+ * SELECT
+ * https://dev.mysql.com/doc/refman/8.0/en/select.html
+ */
+
+SELECT 'hello';
+
+SELECT 1+11;
+
+-- выбираем все поля users
+
+SELECT * FROM users;
+
+-- выбираем только имена users
+
+SELECT ALL last_name FROM users;
+
+-- убираем повторяющиеся. только уникальные
+
+SELECT DISTINCT first_name FROM users;
+
+SELECT * FROM users WHERE last_name = 'Petrov';
+
+SELECT * FROM users WHERE id >= 20;
+
+SELECT * FROM users WHERE id BETWEEN 50 AND 60;
+
+-- пользователи без hash пароля 
+SELECT * FROM users WHERE password_hash IS NULL;
+
+-- выбираем пользователей с hash паролем 
+
+SELECT * FROM users WHERE password_hash IS NOT NULL;
+
+-- выбираем определенное количество пользователей
+SELECT * FROM users Limit 7;
+
+
+-- выбираем определнное количество последних пользователей
+SELECT * FROM users ORDER BY id DESC Limit 4;
+
+-- выбираем определнное количество первых пользователей по порядку
+SELECT * FROM users ORDER BY id ASC Limit 4;
+
+-- выбираем четвертого пользователя (четвертый номер id по порядку) офсет - отступление три строки.
+
+SELECT * FROM users ORDER BY id LIMIT 1 OFFSET 3;
+
+-- выбираем четвертого пользователя (четвертый номер id по порядку) тоже самое, но без офсет
+SELECT * FROM users ORDER BY id LIMIT 3,1;
+
+
+/*
+ * обновляет, изменяет данные в бд
+ * UPDATE
+ * https://dev.mysql.com/doc/refman/8.0/en/update.html 
+*/
+
+INSERT INTO messages (from_user_id, to_user_id, txt)
+VALUES (45, 55, 'Hi!');
+
+INSERT INTO messages (from_user_id, to_user_id, txt)
+VALUES (45, 55, 'I love you!');
+
+SELECT * FROM messages;
+
+-- меняем статус на сообщение доставлено
+
+UPDATE messages 
+SET is_delivered = TRUE;
+
+-- меняем текст сообщения
+
+UPDATE messages 
+SET txt = 'I miss you'
+WHERE id = 5;
+
+/*
+ * удаление
+ * DELETE
+ * https://dev.mysql.com/doc/refman/8.0/en/delete.html 
+ * TRUNCATE
+ * https://dev.mysql.com/doc/refman/8.0/en/truncate-table.html
+*/
+
+-- удаляем пользователя с фамилией Степанов
+
+DELETE FROM users WHERE last_name = 'Stepanov';
+
+SELECT * FROM users;
+
+-- удаляем все строки из messages
+DELETE FROM messages;
+
+SELECT * FROM messages;
+
+-- удаляем все строки из messages
+TRUNCATE TABLE messages;
+
+-- Нельзя так почистить таблицу, на которую есть внешние ключи
+TRUNCATE TABLE users;
+
+-- обнуляем ограничение на проверку наличия на таблицу внешних ключей,
+-- чистим таблицы, возвращаем проверку
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE users;
+SELECT * FROM users;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+
+SELECT * FROM users;
+
+
