@@ -5,6 +5,60 @@
 */
 
 USE vk;
+source fulldb.SQL
+/*
+ не заметил, что надо было создать 4 типа медиа и создал 5. 
+ попробую переименовать их
+ media types
+'error'
+'necessitatibus'
+'quod'
+'vel'
+'voluptatem'
+ */
+
+CREATE TABLE `media_types` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `media_types` (`id`, `name`) VALUES (5, 'error');
+INSERT INTO `media_types` (`id`, `name`) VALUES (2, 'necessitatibus');
+INSERT INTO `media_types` (`id`, `name`) VALUES (3, 'quod');
+INSERT INTO `media_types` (`id`, `name`) VALUES (1, 'vel');
+INSERT INTO `media_types` (`id`, `name`) VALUES (4, 'voluptatem');
+
+SELECT * FROM media_types;
+
+-- переименовываю медиа
+UPDATE media_types 
+SET name = 'books'
+WHERE id = 5;
+
+UPDATE media_types 
+SET name = 'cd'
+WHERE id = 1;
+
+UPDATE media_types 
+SET name = 'magazin'
+WHERE id = 2;
+
+UPDATE media_types 
+SET name = 'video'
+WHERE id = 3;
+
+UPDATE media_types 
+SET name = 'TV'
+WHERE id = 4;
+
+
+-- удаляю запросы в друзья самому себе
+DELETE FROM friend_requests WHERE from_user_id = /* где найти мой id??? */;
+
+-- далее идет проработка данных урока 4
+
 ALTER TABLE friend_requests
 ADD CONSTRAINT sender_not_reciever_check
 CHECK (from_user_id != to_user_id);
@@ -222,5 +276,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 
 SELECT * FROM users;
+
+
+
 
 
