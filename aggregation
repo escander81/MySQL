@@ -1,1 +1,43 @@
-Lesson5
+-- Агрегация Данных
+-- task1
+
+/*
+ Подсчитайте средний возраст пользователей 
+ в таблице users.
+ */
+
+SELECT * FROM users_hw5;
+
+SELECT TIMESTAMPDIFF(YEAR, birthday_at, NOW()) AS age FROM users_hw5;
+
+SELECT AVG(TIMESTAMPDIFF(YEAR, birthday_at, NOW())) AS age FROM users_hw5;
+
+-- screen https://cloud.mail.ru/public/cw6E/JfFX6fNHY
+
+-- task2
+
+/*
+ Подсчитайте количество дней рождения, 
+ которые приходятся на каждый из дней недели. 
+ Следует учесть, что необходимы дни недели текущего года, 
+ а не года рождения.
+
+ */
+
+SELECT name, birthday_at FROM users_hw5;
+SELECT MONTH(birthday_at), DAY(birthday_at) FROM users_hw5;
+SELECT YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at) FROM users_hw5;
+
+SELECT CONCAT_WS('-', YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at)) AS DAY FROM users_hw5;
+
+SELECT DATE(CONCAT_WS('-', YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at))) AS DAY FROM users_hw5;
+
+SELECT DATE_FORMAT(DATE(CONCAT_WS('-', YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at))), '%W') AS DAY FROM users_hw5;
+
+SELECT DATE_FORMAT(DATE(CONCAT_WS('-', YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at))), '%W') AS DAY FROM users_hw5 GROUP BY day;
+
+SELECT DATE_FORMAT(DATE(CONCAT_WS('-', YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at))), '%W') AS DAY, COUNT(*) AS total FROM users_hw5 GROUP BY day;
+
+SELECT DATE_FORMAT(DATE(CONCAT_WS('-', YEAR(NOW()), MONTH(birthday_at), DAY(birthday_at))), '%W') AS DAY, COUNT(*) AS total FROM users_hw5 GROUP BY DAY ORDER BY total DESC;
+
+-- screen https://cloud.mail.ru/public/HrUP/VjYfz4KH2
