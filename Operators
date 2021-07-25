@@ -1,1 +1,32 @@
-Lesson5
+-- task1
+CREATE TABLE users_hw5 (
+	id serial PRIMARY KEY,
+	name varchar(255) COMMENT 'name',
+	birthday_at DATE COMMENT 'birthday',
+	created_at DATETIME,
+	updated_at DATETIME
+) COMMENT = 'shoppers';
+
+INSERT INTO 
+users_hw5 (name, birthday_at, created_at, updated_at)
+VALUES
+	('Alex', '2000-01-26', NULL, NULL),
+	('Dima', '1983-03-25', NULL, NULL),
+	('Andrew', '1981-03-23', NULL, NULL),
+	('Maria', '2007-01-28', NULL, NULL);
+
+SELECT * FROM users_hw5;
+
+UPDATE users_hw5 SET created_at = NOW(), updated_at = NOW();
+SELECT * FROM users_hw5 uh;
+
+-- final result
+-- screen https://cloud.mail.ru/public/Y3r8/64rZ5LskU
+1	Alex	2000-01-26	2021-07-25 14:31:36	2021-07-25 14:31:36
+2	Dima	1983-03-25	2021-07-25 14:31:36	2021-07-25 14:31:36
+3	Andrew	1981-03-23	2021-07-25 14:31:36	2021-07-25 14:31:36
+4	Maria	2007-01-28	2021-07-25 14:31:36	2021-07-25 14:31:36
+5	Alex	2000-01-26	2021-07-25 14:31:36	2021-07-25 14:31:36
+6	Dima	1983-03-25	2021-07-25 14:31:36	2021-07-25 14:31:36
+7	Andrew	1981-03-23	2021-07-25 14:31:36	2021-07-25 14:31:36
+8	Maria	2007-01-28	2021-07-25 14:31:36	2021-07-25 14:31:36
