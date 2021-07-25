@@ -127,4 +127,4 @@ SELECT * FROM warehouse ORDER BY IF(value > 0, 0, 1), value;
 SELECT * FROM users_hw5;
 	
 SELECT name FROM users_hw5 WHERE DATE_FORMAT(birthday_at, '%M') IN ('january', 'march');	
--- screen https://cloud.mail.ru/public/wmTf/rPcgU31dG
+-- screen https://cloud.mail.ru/public/wmTf/rPcgU31dG 
