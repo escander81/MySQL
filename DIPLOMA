@@ -1,0 +1,260 @@
+/* Курсовой проект на базе вымышленной компании с тремя офисами в Англии
+
+данный проект ставит целью попытку создать анализ работы предприятия, 
+обзор покупателей, видов платежей, анализ продуктового портфеля, эффективность менеджеров и т.п. 
+наполнение базы данных выполнено с помощью сайта FillDB.info
+*/
+
+-- для начала обнуляемся
+DROP DATABASE IF EXISTS Diploma;
+CREATE DATABASE Diploma; 
+USE Diploma;
+
+SET NAMES utf8 ;
+SET character_set_client = utf8mb4 ;
+
+-- Таблица№1 создаю таблицу платежей
+CREATE TABLE IF NOT EXISTS payment_methods (
+	payment_method_id tinyint(4) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name varchar(50) NOT NULL
+) ENGINE=InnoDB;
+
+
+-- Таблица№2 создаю менеджеров
+CREATE TABLE employees (
+	employee_id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	first_name varchar(50) NOT NULL,
+	last_name varchar(50) NOT NULL,
+	office_id int(2) NOT NULL
+	-- KEY fk_employees_offices_idx (office_id),
+	-- CONSTRAINT fk_employees_offices FOREIGN KEY (office_id) REFERENCES offices (office_id) ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- Таблица№3 создаю офисы продаж
+CREATE TABLE IF NOT EXISTS offices (
+	office_id int(3) NOT NULL PRIMARY KEY,
+	address varchar(50) NOT NULL,	
+	city varchar(50) NOT NULL
+    -- KEY fk_office_employees (employee_id),
+    -- CONSTRAINT fk_office_employees FOREIGN KEY (employee_id) REFERENCES employees (employee_id) ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- Таблица№4 создаю таблицу Покупателей
+CREATE TABLE IF NOT EXISTS customers (
+	customer_id int(3) AUTO_INCREMENT PRIMARY KEY,
+	first_name varchar(145) NOT NULL,
+    last_name varchar(145) NOT NULL,
+    email varchar(145) NOT NULL,
+    birth_date date DEFAULT NULL,
+    phone char(11) NOT NULL,
+    city varchar(50) NOT NULL,
+    points int(11) NOT NULL DEFAULT '0',
+    office_id int(11) NOT NULL,
+    KEY fk_customer_id (office_id),
+	CONSTRAINT fk_customers_id FOREIGN KEY (office_id) REFERENCES offices (office_id) ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+
+-- Таблица№5 создаю таблицу продуктов
+CREATE TABLE IF NOT EXISTS products (
+	product_id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name varchar(50) NOT NULL,
+	qty_stock int(11) NOT NULL,
+	price decimal(4,2) NOT NULL
+)ENGINE=InnoDB;
+
+
+-- Таблица№6 смотрим статус заказов  
+CREATE TABLE IF NOT EXISTS invoice_status (
+	invoice_status_id tinyint(4) NOT NULL PRIMARY KEY,
+	name varchar(50) NOT NULL
+) ENGINE=InnoDB;
+
+
+-- Таблица№7 создаю таблицу накладных
+-- использую индексы, первичные и внешние ключи
+CREATE TABLE IF NOT EXISTS invoices (
+	invoice_id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    employee_id int(11) NOT NULL,
+	product_id int(11) NOT NULL,
+	customer_id int(3) NOT NULL,
+    invoice_total decimal(9,2) NOT NULL,
+	payment_method_id tinyint(4) NOT NULL,
+	invoice_date date DEFAULT NULL,
+    due_date date NOT NULL,
+    payment_date date DEFAULT NULL,
+    invoice_status_id tinyint(4) NOT NULL,
+    KEY fk_customer_id (customer_id),
+    KEY fk_product_id (product_id),
+	KEY fk_payment_method_id (payment_method_id),
+    KEY fk_invoice_status_id (invoice_status_id),
+    KEY fk_employee_id (employee_id),
+    CONSTRAINT fk_employee_id FOREIGN KEY (employee_id) REFERENCES employees (employee_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_invoice_status_id FOREIGN KEY (invoice_status_id) REFERENCES invoice_status (invoice_status_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_product_id FOREIGN KEY (product_id) REFERENCES products (product_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_customer_id FOREIGN KEY (customer_id) REFERENCES customers (customer_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_payment_method_id FOREIGN KEY (payment_method_id) REFERENCES payment_methods (payment_method_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+-- Таблица№8 анализирую 10 крупнейших покупок 
+-- использую сокращения (Alias), Join, Limit, CREATE VIEW
+CREATE VIEW top_10_sales AS
+SELECT
+	c.customer_id,
+    c.first_name,
+    c.last_name,
+	p.name AS Product,
+    i.invoice_total AS BUDGET,
+    pm.name AS Type_of_payment
+FROM customers c 
+join invoices i
+ON c.customer_id=i.customer_id
+join products p
+On i.product_id=p.product_id
+join payment_methods pm
+ON i.payment_method_id=pm.payment_method_id
+ORDER BY i.invoice_total DESC
+limit 10;
+
+
+-- пример запроса
+SELECT *
+FROM top_10_sales
+JOIN invoices USING (customer_id)
+JOIN invoice_status USING (invoice_status_id);
+
+-- Таблица№9 анализирую объемы продаж менеджеров 
+-- использую Join, Sum, GroupBy, CREATE VIEW
+
+CREATE VIEW sales_by_managers AS
+SELECT
+	e.employee_id,
+    e.last_name,
+    SUM(invoice_total) AS total_sales
+FROM employees e
+JOIN invoices i USING (employee_id)
+GROUP BY employee_id, last_name;
+
+-- пример запроса
+SELECT *
+FROM sales_by_managers
+WHERE total_sales > 450;
+
+
+-- Таблица№10 создаю триггер настроеный на изменение офиса у сотрудника.
+-- при смене офиса триггер выдаст office_id = 8 
+-- использую Trigger
+
+DROP TRIGGER IF EXISTS tr_employee_office;
+DELIMITER $$
+CREATE TRIGGER tr_employee_office
+	BEFORE UPDATE ON employees
+	FOR EACH ROW
+BEGIN
+    SET NEW.office_id = '8';
+END $$
+DELIMITER ;
+
+-- для проверки запустить код
+/*
+update employees
+set office_id = 3
+where employee_id = 1
+
+SELECT * FROM employees;
+*/
+
+
+-- ==далее следуют вводные Базы Данных ==
+
+-- ввожу данные менеджеров
+INSERT INTO `employees` (employee_id, first_name, last_name, office_id) VALUES (1,'Yovonnda','Magrannell',1);
+INSERT INTO `employees` (employee_id, first_name, last_name, office_id) VALUES (2,'Darcy','Nortunen',1);
+INSERT INTO `employees` (employee_id, first_name, last_name, office_id) VALUES (3,'Sayer','Matterson',2);
+INSERT INTO `employees` (employee_id, first_name, last_name, office_id) VALUES (4,'Mindy','Crissil',2);
+INSERT INTO `employees` (employee_id, first_name, last_name, office_id) VALUES (5,'Keriann','Alloisi',3);
+-- check
+SELECT * FROM employees;
+
+-- варианты платежей
+INSERT INTO payment_methods VALUES (1,'Credit Card');
+INSERT INTO payment_methods VALUES (2,'Cash');
+-- check
+SELECT * FROM payment_methods;
+
+-- ввожу данные офисов
+INSERT INTO offices VALUES (1,'221b Baker St','London');
+INSERT INTO offices VALUES (2,'5507 Becker Terrace','Manchester');
+INSERT INTO offices VALUES (3,'54 Northland Court','Liverpool');
+-- check
+SELECT * FROM offices;
+
+-- ввожу данные покупателей. наполнение БД данными с портала FillDB.info
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Rafael', 'Roob', 'lharvey@example.org', '2003-08-08', '560.989.428', 'London', 97, 1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Beulah', 'Corwin', 'yost.norwood@example.org', '1979-06-29', '1-203-056-2', 'Manchester', 338,3);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Chasity', 'Brown', 'kutch.ashton@example.com', '1984-05-26', '966-716-333', 'Liverpool', 796710463,2);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Amos', 'Harber', 'julian.crona@example.net', '2004-05-20', '461.670.851', 'London', 0,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Alice', 'O\'Kon', 'kelsi.ferry@example.org', '2013-11-29', '+52(1)92240', 'London', 163486,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Libby', 'Bartell', 'ella.effertz@example.net', '1971-12-28', '1-243-401-0', 'Liverpool', 464,2);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Treva', 'Abshire', 'petra05@example.org', '2017-05-28', '944.526.413', 'Manchester', 6,3);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Arianna', 'Gibson', 'breanna.white@example.org', '1978-07-05', '1-280-961-1', 'Liverpool', 42860638,2);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Ofelia', 'Kovacek', 'qfarrell@example.com', '1975-08-15', '04940528814', 'London', 1945,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Garnet', 'Abbott', 'elvie.windler@example.org', '1986-02-04', '+62(6)89845', 'London', 9805141,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Jude', 'Sipes', 'eleazar87@example.com', '1980-08-05', '194-024-925', 'London', 4,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Jenifer', 'Hegmann', 'norval44@example.org', '1976-07-01', '+50(8)55427', 'Liverpool', 3178040,2);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Katarina', 'Hilpert', 'omann@example.net', '2004-01-11', '187-312-268', 'Manchester', 5,3);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Cleve', 'Ryan', 'gutmann.savannah@example.net', '2000-12-14', '(456)067-97', 'London', 82555,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Charlene', 'Zboncak', 'koepp.allan@example.com', '2005-08-10', '(125)253-06', 'London', 69922332,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Alia', 'Shields', 'hailie.torp@example.com', '2013-07-09', '1-848-074-2', 'Liverpool', 696490,2);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Deborah', 'Huels', 'ray26@example.net', '2018-09-11', '+52(0)03571', 'London', 756450186,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Orval', 'Donnelly', 'jessyca.ullrich@example.org', '2008-05-13', '(541)521-53', 'Manchester', 47989604,3);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Bruce', 'Turner', 'skiles.rhoda@example.org', '1976-06-30', '782.667.502', 'Liverpool', 975,2);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Louie', 'O\'Connell', 'reichert.jacey@example.net', '1976-05-26', '1-037-754-6', 'London', 0,1);
+INSERT INTO `customers` (`first_name`, `last_name`, `email`, `birth_date`, `phone`, `city`, `points`, `office_id`) VALUES ('Alfonso', 'Beatty', 'rstrosin@example.com', '2012-01-25', '740.044.862', 'Liverpool', 1,3);
+-- check
+SELECT * FROM customers;
+
+-- ввожу продукты с помощью сайта FillDB.info
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (1, 'sequoia', 0, '99.99');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (2, 'oditty', 76415393, '2.76');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (3, 'labore', 7408715, '0.41');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (4, 'estiablo', 161114, '3.49');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (5, 'debitis', 44095, '99.99');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (6, 'artizan', 1022570, '99.99');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (7, 'acommodity', 72, '0.37');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (8, 'accusamus', 78681169, '58.47');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (9, 'quamish', 297, '99.99');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (10, 'nonna', 711739887, '99.99');
+INSERT INTO `products` (`product_id`, `name`, `qty_stock`, `price`) VALUES (11, 'voluptatem', 8122, '15.42');
+-- check
+SELECT * FROM products;
+
+-- ввожу варианты оплаты накладных
+INSERT INTO invoice_status VALUES (1,'Paid');
+INSERT INTO invoice_status VALUES (2,'Archived');
+INSERT INTO invoice_status VALUES (3,'Cancelled');
+-- check
+SELECT * FROM invoice_status;
+
+-- наполняю данными накладные
+INSERT INTO invoices VALUES (1,1,3,2,101.79,2,'2019-03-09','2020-03-29',NULL,2);
+INSERT INTO invoices VALUES (3,2,1,1,147.99,2,'2019-07-31','2020-08-20',NULL,2);
+INSERT INTO invoices VALUES (4,3,3,3,152.21,2,'2019-03-08','2021-03-28',NULL,2);
+INSERT INTO invoices VALUES (2,1,5,5,175.32,1,'2019-06-11','2020-07-01','2019-02-12',2);
+INSERT INTO invoices VALUES (5,4,4,5,169.36,2,'2019-07-18','2021-08-07',NULL,3);
+INSERT INTO invoices VALUES (6,5,8,1,157.78,2,'2019-01-29','2021-02-18','2021-01-03',1);
+INSERT INTO invoices VALUES (7,4,4,12,133.87,2,'2019-09-04','2020-09-24',NULL,3);
+INSERT INTO invoices VALUES (8,2,5,11,189.12,2,'2019-05-20','2020-06-09',NULL,3);
+INSERT INTO invoices VALUES (9,1,3,15,172.17,2,'2019-07-09','2021-07-29',NULL,3);
+INSERT INTO invoices VALUES (10,2,9,1,159.50,1,'2019-06-30','2020-07-20',NULL,3);
+INSERT INTO invoices VALUES (11,3,5,7,126.15,2,'2019-01-07','2021-01-27','2019-01-11',2);
+INSERT INTO invoices VALUES (13,4,1,8,135.01,1,'2019-06-25','2021-07-15','2021-07-26',1);
+INSERT INTO invoices VALUES (15,5,5,3,167.29,1,'2019-11-25','2020-12-15','2020-01-15',2);
+INSERT INTO invoices VALUES (16,5,7,1,162.02,1,'2019-03-30','2021-04-19',NULL,3);
+INSERT INTO invoices VALUES (17,3,10,16,126.38,2,'2019-07-30','2020-08-19','2021-01-15',1);
+INSERT INTO invoices VALUES (18,4,6,5,180.17,2,'2019-05-23','2021-06-12','2021-01-08',1);
+INSERT INTO invoices VALUES (19,1,5,11,134.47,1,'2019-11-23','2020-12-13',NULL,3);
+-- check
+SELECT * FROM invoices;
